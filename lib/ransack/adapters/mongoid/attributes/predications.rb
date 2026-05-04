@@ -40,7 +40,7 @@ module Ransack
           end
 
           def not_in(other)
-            { "$not" => { name => { "$in" => other } } }.to_inquiry
+            { name => { "$nin" => other } }.to_inquiry
           end
 
           def not_in_any(others)
@@ -64,7 +64,7 @@ module Ransack
           end
 
           def does_not_match(other)
-            { "$not" => { name => /#{other}/i } }.to_inquiry
+            { name => { '$not' => /#{other}/i } }.to_inquiry
           end
 
           def does_not_match_any(others)
