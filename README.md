@@ -1,12 +1,8 @@
-# Archived
-
-The project is archived.
-
-# Ransack::Mongoid
-
-
+# Ransack::Mongoid REBORN
 
 This gem contains the Mongoid support for Ransack.
+
+The idea of this fork is to allow developers to upgrade their apps who have `Ransack:::Mongoid` as a dependency. You still should migrate away from it.
 
 ## Installation
 
