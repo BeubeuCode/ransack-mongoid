@@ -13,8 +13,7 @@ module Ransack
       end
 
       def for_object(object, options = {})
-        case object
-        when ActiveRecord::Relation
+        if defined?(::ActiveRecord::Relation) && ::ActiveRecord::Relation === object
           Adapters::ActiveRecord::Context.new(object.klass, options)
         end
       end
@@ -42,13 +41,13 @@ module Ransack
     end
 
     def klassify(obj)
-      if Class === obj && ::ActiveRecord::Base > obj
+      if Class === obj && defined?(::ActiveRecord::Base) && ::ActiveRecord::Base > obj
         obj
       elsif obj.respond_to? :klass
         obj.klass
-      elsif obj.respond_to? :active_record  # Rails 3
+      elsif obj.respond_to? :active_record
         obj.active_record
-      elsif obj.respond_to? :base_klass     # Rails 4
+      elsif obj.respond_to? :base_klass
         obj.base_klass
       else
         raise ArgumentError, "Don't know how to klassify #{obj.inspect}"

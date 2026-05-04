@@ -5,9 +5,13 @@ module Ransack
       nodes.inject(&:and)
     end
 
+    def visit_Ransack_Nodes_Sort(object)
+      object.attr.send(object.dir) if object.valid?
+    end
+
     def quoted?(object)
       case object
-      when Arel::Nodes::SqlLiteral, Bignum, Fixnum
+      when Integer
         false
       else
         true

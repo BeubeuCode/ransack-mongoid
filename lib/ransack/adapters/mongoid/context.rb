@@ -1,5 +1,4 @@
 require 'ransack/context'
-require 'polyamorous'
 
 module Ransack
   module Adapters
@@ -7,8 +6,10 @@ module Ransack
       class Context < ::Ransack::Context
 
         def initialize(object, options = {})
-          super
-          # @arel_visitor = @engine.connection.visitor
+          @object = relation_for(object)
+          @klass  = @object.klass
+          @search_key = options[:search_key] || Ransack.options[:search_key]
+          @base = @klass
         end
 
         def relation_for(object)
@@ -34,14 +35,18 @@ module Ransack
 
           name = '_id' if name == 'id'
 
-          t = object.klass.fields[name].try(:type) || bind_pair_for(attr.name).first.fields[name].type
+          bind_pair = bind_pair_for(attr.name)
+          t = object.klass.fields[name].try(:type) ||
+              (bind_pair && bind_pair.first&.fields&.[](name)&.type)
+          return nil unless t
 
           t.to_s.demodulize.underscore.to_sym
         end
 
         def evaluate(search, opts = {})
           viz = Visitor.new
-          relation = @object.where(viz.accept(search.base))
+          accepted = viz.accept(search.base)
+          relation = accepted ? @object.where(accepted) : @object.all
           if search.sorts.any?
             ary_sorting = viz.accept(search.sorts)
             sorting = {}
@@ -133,77 +138,6 @@ module Ransack
           klass = klassify parent
           ransackable_association?(str, klass) &&
             klass.reflect_on_all_associations_all.detect { |a| a.name.to_s == str }
-        end
-
-        def join_dependency(relation)
-          if relation.respond_to?(:join_dependency) # Polyamorous enables this
-            relation.join_dependency
-          else
-            build_join_dependency(relation)
-          end
-        end
-
-        # Checkout active_record/relation/query_methods.rb +build_joins+ for
-        # reference. Lots of duplicated code maybe we can avoid it
-        def build_join_dependency(relation)
-          buckets = relation.joins_values.group_by do |join|
-            case join
-            when String
-              Constants::STRING_JOIN
-            when Hash, Symbol, Array
-              Constants::ASSOCIATION_JOIN
-            when JoinDependency, JoinDependency::JoinAssociation
-              Constants::STASHED_JOIN
-            when Arel::Nodes::Join
-              Constants::JOIN_NODE
-            else
-              raise 'unknown class: %s' % join.class.name
-            end
-          end
-
-          association_joins = buckets[Constants::ASSOCIATION_JOIN] || []
-
-          stashed_association_joins = buckets[Constants::STASHED_JOIN] || []
-
-          join_nodes = buckets[Constants::JOIN_NODE] || []
-
-          string_joins = (buckets[Constants::STRING_JOIN] || [])
-            .map { |x| x.strip }
-            .uniq
-
-          join_list = relation.send :custom_join_ast,
-            relation.table.from(relation.table), string_joins
-
-          join_dependency = JoinDependency.new(
-            relation.klass, association_joins, join_list
-          )
-
-          join_nodes.each do |join|
-            join_dependency.alias_tracker.aliases[join.left.name.downcase] = 1
-          end
-
-          join_dependency # ActiveRecord::Associations::JoinDependency
-        end
-
-        # ActiveRecord method
-        def build_or_find_association(name, parent = @base, klass = nil)
-          found_association = @join_dependency.join_associations
-          .detect do |assoc|
-            assoc.reflection.name == name &&
-            assoc.parent == parent &&
-            (!klass || assoc.reflection.klass == klass)
-          end
-          unless found_association
-            @join_dependency.send(
-              :build,
-              Polyamorous::Join.new(name, @join_type, klass),
-              parent
-             )
-            found_association = @join_dependency.join_associations.last
-            # Leverage the stashed association functionality in AR
-            @object = @object.joins(found_association)
-          end
-          found_association
         end
 
       end
