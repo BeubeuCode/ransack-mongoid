@@ -48,13 +48,13 @@ module Ransack
     end
 
     describe 'not_cont' do
-      it_has_behavior 'wildcard escaping', :name_not_cont, { "$not" => { 'name' => /%\._\\/i } } do
+      it_has_behavior 'wildcard escaping', :name_not_cont, { 'name' => { '$not' => /%\._\\/i } } do
         subject { @s }
       end
 
       it 'generates a regex query' do
         @s.name_not_cont = 'ric'
-        expect(@s.result.selector).to eq({ "$not" => { 'name' => /ric/i } })
+        expect(@s.result.selector).to eq({ 'name' => { '$not' => /ric/i } })
       end
     end
 

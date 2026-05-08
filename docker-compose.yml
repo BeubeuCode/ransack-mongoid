@@ -1,0 +1,13 @@
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+
+  test:
+    build: .
+    environment:
+      MONGODB_HOST: mongo
+    depends_on:
+      - mongo
+    command: bundle exec rspec

@@ -3,9 +3,4 @@ test:
     default:
       database: ransack_mongoid_test
       hosts:
-        - localhost:27017
-  sessions:
-    default:
-      database: ransack_mongoid_test
-      hosts:
-        - localhost:27017
+        - "<%= ENV.fetch('MONGODB_HOST', 'localhost') %>:27017"

@@ -16,7 +16,7 @@ class Person
   field :salary, type: Integer
   field :awesome, type: Boolean, default: false
 
-  belongs_to :parent, :class_name => 'Person', inverse_of: :children
+  belongs_to :parent, :class_name => 'Person', inverse_of: :children, optional: true
   has_many   :children, :class_name => 'Person', inverse_of: :parent
 
   has_many   :articles
@@ -33,7 +33,7 @@ class Person
 
   scope :restricted,  lambda { where(restricted: 1) }
   scope :active,      lambda { where(active: 1) }
-  scope :over_age,    lambda { |y| where(:age.gt => y) }
+  scope :over_age,    lambda { |y| where('age' => { '$gt' => y }) }
 
   ransacker :reversed_name, :formatter => proc { |v| v.reverse } do |parent|
     parent.table[:name]
@@ -72,7 +72,7 @@ class Article
   field :title, type: String
   field :body, type: String
 
-  belongs_to :person
+  belongs_to :person, optional: true
   has_many :comments
   # has_and_belongs_to_many :tags
   has_many :notes, :as => :notable
@@ -90,8 +90,8 @@ class Comment
   field :body, type: String
 
 
-  belongs_to :article
-  belongs_to :person
+  belongs_to :article, optional: true
+  belongs_to :person, optional: true
 end
 
 class Tag
@@ -107,29 +107,28 @@ class Note
 
   field :note, type: String
 
-  belongs_to :notable, :polymorphic => true
+  belongs_to :notable, :polymorphic => true, optional: true
 end
 
 module Schema
   def self.create
-    10.times do
-      person = Person.make.save!
-      Note.make.save!(:notable => person)
-      3.times do
-        article = Article.create!(:person => person)
-        3.times do
-          # article.tags = [Tag.make.save!, Tag.make.save!, Tag.make.save!]
-        end
-        Note.create.save!(:notable => article)
-        10.times do
-          Comment.create.save!(:article => article, :person => person)
-        end
+    10.times do |i|
+      person = Person.create!(
+        name: "Person #{i}",
+        email: "person#{i}@example.com",
+        salary: 30_000 + i * 1_000,
+        only_search: "search #{i}",
+        only_sort: "sort #{i}",
+        only_admin: "admin #{i}"
+      )
+      Note.create!(note: "person note #{i}", notable: person)
+      3.times do |j|
+        article = Article.create!(title: "Article #{j} for #{i}", body: "body #{j}", person: person)
+        Note.create!(note: "article note #{j}", notable: article)
+        10.times { |k| Comment.create!(body: "comment #{k}", article: article, person: person) }
       end
     end
 
-    Comment.create!(
-      :body => 'First post!',
-      :article => Article.create!(:title => 'Hello, world!')
-      )
+    Comment.create!(body: 'First post!', article: Article.create!(title: 'Hello, world!'))
   end
 end

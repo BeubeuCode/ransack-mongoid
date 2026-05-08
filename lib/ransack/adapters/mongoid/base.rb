@@ -85,6 +85,10 @@ module Ransack
             []
           end
 
+          def ransackable_scopes_skip_sanitize_args(auth_object = nil)
+            []
+          end
+
           # imitating active record
 
           def joins_values *args
