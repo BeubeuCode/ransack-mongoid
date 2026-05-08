@@ -9,7 +9,7 @@ The idea of this fork is to allow developers to upgrade their apps who have `Ran
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'ransack-mongoid', github: 'activerecord-hackery/ransack-mongoid'
+gem 'ransack-mongoid', github: 'BeubeuCode/ransack-mongoid'
 ```
 
 And then execute:
